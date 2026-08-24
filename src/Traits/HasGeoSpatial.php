@@ -10,9 +10,10 @@ use Juanparati\LaraGeos\Casts\Contracts\LocationCastContract;
 use Juanparati\LaraGeos\Casts\Contracts\RegionCastContract;
 use Juanparati\LaraGeos\Support\GeometryExpression;
 use Juanparati\LaraGeos\Types\Point;
+use Juanparati\LaraGeos\Types\Polygon;
 
 /**
- * Distance scopes for models with spatial point columns.
+ * Distance and spatial predicate scopes for models with spatial columns.
  *
  * Distances are in meters on every driver:
  * - MySQL 8+: geodesic ST_Distance on geographic SRIDs (ellipsoid).
@@ -20,6 +21,10 @@ use Juanparati\LaraGeos\Types\Point;
  *   results; POINT columns only — MariaDB cannot measure polygon distances).
  * - PostgreSQL/PostGIS: ST_Distance, meters on geography columns (ellipsoid);
  *   geometry columns return SRS units instead.
+ *
+ * Predicates (whereContains/whereWithin/whereIntersects) evaluate edges
+ * geodesically on MySQL geographic SRIDs and PostGIS geography columns, but
+ * as straight lines in coordinate space on MariaDB.
  */
 trait HasGeoSpatial
 {
@@ -54,6 +59,35 @@ trait HasGeoSpatial
         $query->orderByRaw("{$sql} {$direction}", $bindings);
     }
 
+    /**
+     * Filter rows whose geometry column spatially contains the given geometry
+     * (typically: polygon column contains a point).
+     */
+    public function scopeWhereContains(Builder $query, string $column, Point|Polygon $geometry): void
+    {
+        [$sql, $bindings] = $this->spatialRelationSql($query, $column, $geometry, relation: 'contains');
+
+        $query->whereRaw($sql, $bindings);
+    }
+
+    /**
+     * Filter rows whose geometry column lies inside the given polygon
+     * (typically: point column within an area).
+     */
+    public function scopeWhereWithin(Builder $query, string $column, Polygon $polygon): void
+    {
+        [$sql, $bindings] = $this->spatialRelationSql($query, $column, $polygon, relation: 'within');
+
+        $query->whereRaw($sql, $bindings);
+    }
+
+    public function scopeWhereIntersects(Builder $query, string $column, Point|Polygon $geometry): void
+    {
+        [$sql, $bindings] = $this->spatialRelationSql($query, $column, $geometry, relation: 'intersects');
+
+        $query->whereRaw($sql, $bindings);
+    }
+
     public function getLocationCastedAttributes(): Collection
     {
         return collect($this->getCasts())->filter(fn ($cast) => is_subclass_of($cast, LocationCastContract::class))->keys();
@@ -79,5 +113,27 @@ trait HasGeoSpatial
         $function = $driver === 'mariadb' ? 'ST_Distance_Sphere' : 'ST_Distance';
 
         return ["{$function}({$wrapped}, {$pointSql})", $bindings];
+    }
+
+    /**
+     * @return array{string, array}  [sql with placeholders, bindings]
+     */
+    private function spatialRelationSql(Builder $query, string $column, Point|Polygon $geometry, string $relation): array
+    {
+        $driver = $query->getConnection()->getDriverName();
+        $wrapped = $query->getGrammar()->wrap($column);
+
+        [$geometrySql, $bindings] = GeometryExpression::geometryExpression($geometry, $driver);
+
+        // PostGIS geography columns lack ST_Contains/ST_Within; ST_Covers and
+        // ST_CoveredBy are the geography-capable equivalents. They also count
+        // boundary points as inside, unlike Contains/Within.
+        $function = match ($relation) {
+            'contains' => $driver === 'pgsql' ? 'ST_Covers' : 'ST_Contains',
+            'within' => $driver === 'pgsql' ? 'ST_CoveredBy' : 'ST_Within',
+            'intersects' => 'ST_Intersects',
+        };
+
+        return ["{$function}({$wrapped}, {$geometrySql})", $bindings];
     }
 }

@@ -33,6 +33,41 @@ trait InteractsWithDriverSql
     }
 
     /**
+     * The containment function the predicate scopes use.
+     */
+    protected function containsFnSql(): string
+    {
+        return $this->driver() === 'pgsql' ? 'ST_Covers' : 'ST_Contains';
+    }
+
+    /**
+     * The within function the predicate scopes use.
+     */
+    protected function withinFnSql(): string
+    {
+        return $this->driver() === 'pgsql' ? 'ST_CoveredBy' : 'ST_Within';
+    }
+
+    /**
+     * The placeholder SQL a scope embeds for a polygon argument.
+     */
+    protected function polygonExprSql(): string
+    {
+        return match ($this->driver()) {
+            'mysql' => "ST_GeomFromText(?, ?, 'axis-order=long-lat')",
+            'mariadb', 'pgsql' => 'ST_GeomFromText(?, ?)',
+        };
+    }
+
+    /**
+     * The bindings a scope produces for a polygon argument.
+     */
+    protected function polygonExprBindings(Polygon $polygon): array
+    {
+        return [$polygon->toWkt(), $polygon->getSrid()];
+    }
+
+    /**
      * The placeholder SQL a scope embeds for a point argument.
      */
     protected function pointExprSql(): string

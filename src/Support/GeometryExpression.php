@@ -71,6 +71,38 @@ final class GeometryExpression
     }
 
     /**
+     * Parameterized SQL expression producing the given polygon, for use in scopes.
+     *
+     * @return array{string, array}  [sql with placeholders, bindings]
+     *
+     * @throws UnsupportedDriverException
+     */
+    public static function polygonExpression(Polygon $polygon, string $driver): array
+    {
+        $srid = self::resolveSrid($polygon);
+
+        return match ($driver) {
+            'mysql' => ["ST_GeomFromText(?, ?, 'axis-order=long-lat')", [$polygon->toWkt(), $srid]],
+            'mariadb', 'pgsql' => ['ST_GeomFromText(?, ?)', [$polygon->toWkt(), $srid]],
+            default => throw UnsupportedDriverException::make($driver),
+        };
+    }
+
+    /**
+     * Parameterized SQL expression producing the given geometry, for use in scopes.
+     *
+     * @return array{string, array}  [sql with placeholders, bindings]
+     *
+     * @throws UnsupportedDriverException
+     */
+    public static function geometryExpression(Point|Polygon $geometry, string $driver): array
+    {
+        return $geometry instanceof Point
+            ? self::pointExpression($geometry, $driver)
+            : self::polygonExpression($geometry, $driver);
+    }
+
+    /**
      * Inverse of geomFromText(): extracts the WKT and SRID from an Expression
      * previously produced by this class.
      *

@@ -18,6 +18,9 @@ use Juanparati\LaraGeos\Types\Polygon;
  * @method void selectDistanceTo(Builder $query, string $column, Point $point)
  * @method void orderByDistanceTo(Builder $query, string $column, Point $point, string $direction = 'asc')
  * @method void withinDistanceTo(Builder $query, string $column, Point $point, int $distance)
+ * @method void whereContains(Builder $query, string $column, Point|Polygon $geometry)
+ * @method void whereWithin(Builder $query, string $column, Polygon $polygon)
+ * @method void whereIntersects(Builder $query, string $column, Point|Polygon $geometry)
  *
  * @property Point location
  * @property Polygon area

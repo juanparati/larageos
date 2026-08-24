@@ -13,7 +13,7 @@ Based on [Laravel Spatial](https://github.com/tarfin-labs/laravel-spatial) by Ta
 - Laravel 12+
 - One of:
   - **MySQL 8.0+** (the library relies on the `axis-order` WKT option introduced in 8.0)
-  - **MariaDB 10.6+** — you **must** use Laravel's `mariadb` driver, not `mysql`.
+  - **MariaDB 11.4+** — you **must** use Laravel's `mariadb` driver, not `mysql`.
     Writes on the `mysql` driver generate MySQL-specific SQL (the three-argument
     `ST_GeomFromText` with `axis-order`) that MariaDB rejects.
   - **PostgreSQL with PostGIS**
@@ -166,6 +166,46 @@ Caveats:
 
 Unsupported drivers (e.g. SQLite) throw
 `Juanparati\LaraGeos\Exceptions\UnsupportedDriverException`.
+
+## Spatial predicate scopes
+
+Point-in-polygon and other topological filters:
+
+```php
+$point = new Point(lat: 2, lng: 2);
+$area  = Polygon::fromGeoJson([
+    'type'        => 'Polygon',
+    'coordinates' => [[[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]]],
+]);
+
+// Rows whose polygon column contains the given point (or whole polygon):
+Region::query()->whereContains('area', $point)->get();
+
+// Rows whose column lies inside the given polygon:
+Address::query()->whereWithin('location', $area)->get();
+
+// Rows whose column intersects (shares any point with) the given geometry:
+Region::query()->whereIntersects('area', $area)->get();
+```
+
+Functions used per driver:
+
+| Scope             | MySQL / MariaDB | PostGIS         |
+|-------------------|-----------------|-----------------|
+| `whereContains`   | `ST_Contains`   | `ST_Covers`     |
+| `whereWithin`     | `ST_Within`     | `ST_CoveredBy`  |
+| `whereIntersects` | `ST_Intersects` | `ST_Intersects` |
+
+Caveats:
+
+- **Boundary points**: PostGIS `geography` columns do not support
+  `ST_Contains`/`ST_Within`, so the scopes use `ST_Covers`/`ST_CoveredBy`
+  there. The practical difference is only at the edges: a point exactly on a
+  polygon's boundary counts as contained on PostGIS, but not on MySQL/MariaDB.
+- **Edge semantics**: MySQL (geographic SRIDs) and PostGIS `geography` treat
+  polygon edges as geodesics; MariaDB treats them as straight lines in
+  coordinate space. Results near the edges of large polygons can differ
+  between drivers.
 
 ## GeoJSON
 

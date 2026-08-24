@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Juanparati\LaraGeos\Casts\LocationCast;
 use Juanparati\LaraGeos\Traits\HasGeoSpatial;
 use Juanparati\LaraGeos\Types\Point;
+use Juanparati\LaraGeos\Types\Polygon;
 
 /**
  * Class Address
@@ -16,6 +17,7 @@ use Juanparati\LaraGeos\Types\Point;
  * @method void selectDistanceTo(Builder $query, string $column, Point $point)
  * @method void orderByDistanceTo(Builder $query, string $column, Point $point, string $direction = 'asc')
  * @method void withinDistanceTo(Builder $query, string $column, Point $point, int $distance)
+ * @method void whereWithin(Builder $query, string $column, Polygon $polygon)
  *
  * @property Point location
  */
