@@ -29,8 +29,18 @@ class GeometryExpressionTest extends TestCase
     }
 
     #[Test]
-    public function it_resolves_zero_without_srid_and_config(): void
+    public function it_resolves_the_shipped_default_srid_without_an_explicit_srid(): void
     {
+        $this->assertSame(4326, GeometryExpression::resolveSrid(new Point(1, 2, srid: null)));
+    }
+
+    #[Test]
+    public function it_resolves_zero_when_srid_and_config_are_unset(): void
+    {
+        // 1. Arrange
+        config(['larageos.default_srid' => null]);
+
+        // 2. Act & Assert
         $this->assertSame(0, GeometryExpression::resolveSrid(new Point(1, 2, srid: null)));
     }
 
@@ -66,6 +76,8 @@ class GeometryExpressionTest extends TestCase
     public function it_omits_the_srid_when_it_resolves_to_zero(): void
     {
         // 1. Arrange
+        config(['larageos.default_srid' => null]);
+
         $point = new Point(25.1515, 36.1212, srid: null);
 
         // 2. Act & Assert

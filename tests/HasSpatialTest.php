@@ -49,7 +49,7 @@ class HasSpatialTest extends TestCase
 
         // 3. Assert
         $this->assertEquals(
-            expected: "select {$this->wrap('regions')}.*, ST_Distance({$this->wrap('location')}, {$this->pointExprSql()}) as distance from {$this->wrap('regions')}",
+            expected: "select {$this->wrap('regions')}.*, {$this->distanceFnSql()}({$this->wrap('location')}, {$this->pointExprSql()}) as distance from {$this->wrap('regions')}",
             actual: $query->toSql()
         );
     }
@@ -65,7 +65,7 @@ class HasSpatialTest extends TestCase
 
         // 3. Assert
         $this->assertEquals(
-            expected: "select * from {$this->wrap('regions')} where ST_Distance({$this->wrap('location')}, {$this->pointExprSql()}) <= ?",
+            expected: "select * from {$this->wrap('regions')} where {$this->distanceFnSql()}({$this->wrap('location')}, {$this->pointExprSql()}) <= ?",
             actual: $query->toSql()
         );
     }
@@ -82,12 +82,12 @@ class HasSpatialTest extends TestCase
 
         // 3. Assert
         $this->assertEquals(
-            expected: "select * from {$this->wrap('regions')} order by ST_Distance({$this->wrap('location')}, {$this->pointExprSql()}) asc",
+            expected: "select * from {$this->wrap('regions')} order by {$this->distanceFnSql()}({$this->wrap('location')}, {$this->pointExprSql()}) asc",
             actual: $queryForAsc->toSql()
         );
 
         $this->assertEquals(
-            expected: "select * from {$this->wrap('regions')} order by ST_Distance({$this->wrap('location')}, {$this->pointExprSql()}) desc",
+            expected: "select * from {$this->wrap('regions')} order by {$this->distanceFnSql()}({$this->wrap('location')}, {$this->pointExprSql()}) desc",
             actual: $queryForDesc->toSql()
         );
     }
@@ -118,8 +118,8 @@ class HasSpatialTest extends TestCase
         $near = Address::create(['location' => new Point(lat: 0, lng: 0.5)]);
         Address::create(['location' => new Point(lat: 0, lng: 1.0)]);
 
-        // Threshold between the two rows, in the driver's ST_Distance unit.
-        $threshold = $this->driver() === 'mariadb' ? 0.75 : 83_490.0;
+        // Threshold in meters, between the distances of the two rows (~55.6 km and ~111.3 km).
+        $threshold = 83_490.0;
 
         // 2. Act
         $found = Address::query()->withinDistanceTo('location', $origin, $threshold)->get();

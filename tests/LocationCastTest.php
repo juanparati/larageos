@@ -48,6 +48,8 @@ class LocationCastTest extends TestCase
     public function it_omits_the_srid_when_it_is_unspecified(): void
     {
         // 1. Arrange
+        config(['larageos.default_srid' => null]);
+
         $address = new Address();
         $point = new Point(27.1234, 39.1234, srid: null);
 

@@ -21,7 +21,7 @@ class HasSpatialPointTest extends TestCase
 
         // 3. Assert
         $this->assertEquals(
-            expected: "select {$this->wrap('addresses')}.*, ST_Distance({$this->wrap($castedAttr)}, {$this->pointExprSql()}) as distance from {$this->wrap('addresses')}",
+            expected: "select {$this->wrap('addresses')}.*, {$this->distanceFnSql()}({$this->wrap($castedAttr)}, {$this->pointExprSql()}) as distance from {$this->wrap('addresses')}",
             actual: $query->toSql()
         );
 
@@ -41,7 +41,7 @@ class HasSpatialPointTest extends TestCase
 
         // 3. Assert
         $this->assertEquals(
-            expected: "select * from {$this->wrap('addresses')} where ST_Distance({$this->wrap($castedAttr)}, {$this->pointExprSql()}) <= ?",
+            expected: "select * from {$this->wrap('addresses')} where {$this->distanceFnSql()}({$this->wrap($castedAttr)}, {$this->pointExprSql()}) <= ?",
             actual: $query->toSql()
         );
 
@@ -62,12 +62,12 @@ class HasSpatialPointTest extends TestCase
 
         // 3. Assert
         $this->assertEquals(
-            expected: "select * from {$this->wrap('addresses')} order by ST_Distance({$this->wrap($castedAttr)}, {$this->pointExprSql()}) asc",
+            expected: "select * from {$this->wrap('addresses')} order by {$this->distanceFnSql()}({$this->wrap($castedAttr)}, {$this->pointExprSql()}) asc",
             actual: $queryForAsc->toSql()
         );
 
         $this->assertEquals(
-            expected: "select * from {$this->wrap('addresses')} order by ST_Distance({$this->wrap($castedAttr)}, {$this->pointExprSql()}) desc",
+            expected: "select * from {$this->wrap('addresses')} order by {$this->distanceFnSql()}({$this->wrap($castedAttr)}, {$this->pointExprSql()}) desc",
             actual: $queryForDesc->toSql()
         );
 

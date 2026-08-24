@@ -25,6 +25,14 @@ trait InteractsWithDriverSql
     }
 
     /**
+     * The distance function the scopes use.
+     */
+    protected function distanceFnSql(): string
+    {
+        return $this->driver() === 'mariadb' ? 'ST_Distance_Sphere' : 'ST_Distance';
+    }
+
+    /**
      * The placeholder SQL a scope embeds for a point argument.
      */
     protected function pointExprSql(): string
@@ -100,8 +108,8 @@ trait InteractsWithDriverSql
     }
 
     /**
-     * Expected ST_Distance range between two points, in the driver's unit:
-     * meters on MySQL 8 / PostGIS geography, Cartesian degrees on MariaDB.
+     * Expected distance range between two points, in meters on every driver
+     * (ellipsoidal on MySQL/PostGIS geography, spherical on MariaDB).
      *
      * @return array{float, float}  [min, max]
      */
@@ -109,12 +117,9 @@ trait InteractsWithDriverSql
     {
         $degrees = sqrt(($a->getLat() - $b->getLat()) ** 2 + ($a->getLng() - $b->getLng()) ** 2);
 
-        if ($this->driver() === 'mariadb') {
-            return [$degrees * 0.99, $degrees * 1.01];
-        }
-
         // Rough geodesic bounds: one degree spans 111.32 km at the equator at
-        // most; a 20% margin absorbs latitude compression for nearby points.
+        // most; a 20% margin absorbs latitude compression for nearby points
+        // and the sphere-vs-ellipsoid difference.
         $meters = $degrees * 111_320;
 
         return [$meters * 0.6, $meters * 1.2];

@@ -12,12 +12,14 @@ use Juanparati\LaraGeos\Support\GeometryExpression;
 use Juanparati\LaraGeos\Types\Point;
 
 /**
- * Distance scopes for models with spatial columns.
+ * Distance scopes for models with spatial point columns.
  *
- * ST_Distance units depend on the database:
- * - MySQL 8+: meters for geographic SRIDs (e.g. 4326).
- * - MariaDB: Cartesian units of the coordinate system (degrees for lat/lng data).
- * - PostgreSQL/PostGIS: meters for geography columns, SRS units for geometry columns.
+ * Distances are in meters on every driver:
+ * - MySQL 8+: geodesic ST_Distance on geographic SRIDs (ellipsoid).
+ * - MariaDB: ST_Distance_Sphere (spherical approximation, ~0.5% off ellipsoid
+ *   results; POINT columns only — MariaDB cannot measure polygon distances).
+ * - PostgreSQL/PostGIS: ST_Distance, meters on geography columns (ellipsoid);
+ *   geometry columns return SRS units instead.
  */
 trait HasSpatial
 {
@@ -33,8 +35,8 @@ trait HasSpatial
     }
 
     /**
-     * Filter rows within the given distance, expressed in the driver's
-     * ST_Distance unit (see the trait docblock).
+     * Filter rows within the given distance in meters (see the trait docblock
+     * for per-driver semantics).
      */
     public function scopeWithinDistanceTo(Builder $query, string $column, Point $point, float $distance): void
     {
@@ -72,6 +74,10 @@ trait HasSpatial
 
         [$pointSql, $bindings] = GeometryExpression::pointExpression($point, $driver);
 
-        return ["ST_Distance({$wrapped}, {$pointSql})", $bindings];
+        // MariaDB's ST_Distance is Cartesian (degrees for lat/lng data);
+        // ST_Distance_Sphere returns meters like the other drivers.
+        $function = $driver === 'mariadb' ? 'ST_Distance_Sphere' : 'ST_Distance';
+
+        return ["{$function}({$wrapped}, {$pointSql})", $bindings];
     }
 }

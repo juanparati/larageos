@@ -34,7 +34,7 @@ php artisan vendor:publish --tag=larageos
 // config/larageos.php
 return [
     // SRID applied when a geometry is stored without an explicit SRID.
-    'default_srid' => null,
+    'default_srid' => 4326,
 ];
 ```
 
@@ -145,24 +145,24 @@ Address::query()->orderByDistanceTo('location', $center)->get();          // nea
 Address::query()->orderByDistanceTo('location', $center, 'desc')->get();  // farthest first
 ```
 
-### ⚠️ Distance units differ per database
+### Distance units
 
-The scopes use the native `ST_Distance` function, whose return unit depends on
-the database and column type:
+Distances — both the `distance` value returned by `selectDistanceTo` and the
+threshold passed to `withinDistanceTo` — are in **meters** on every driver:
 
-| Driver  | Column type          | `ST_Distance` unit                          |
-|---------|----------------------|---------------------------------------------|
-| MySQL 8 | geographic SRID (4326) | **meters** (geodesic)                     |
-| MariaDB | any geometry         | **Cartesian units** (degrees for lat/lng data) |
-| PostGIS | `geography`          | **meters** (geodesic)                       |
-| PostGIS | `geometry`           | SRS units (degrees for 4326)                |
+| Driver  | Function             | Model                                        |
+|---------|----------------------|----------------------------------------------|
+| MySQL 8 | `ST_Distance` on geographic SRIDs | geodesic (ellipsoid)            |
+| MariaDB | `ST_Distance_Sphere` | spherical (within ~0.5% of ellipsoid results) |
+| PostGIS | `ST_Distance` on `geography` columns | geodesic (ellipsoid)           |
 
-The `distance` value returned by `selectDistanceTo` and the threshold you pass
-to `withinDistanceTo` are always in that unit. In other words: `10_000` means
-10 km on MySQL 8 and PostGIS geography, but 10,000 *degrees* on MariaDB.
-MariaDB has no built-in geodesic distance for arbitrary geometries, so if you
-need meters there, convert approximately (1° ≈ 111.32 km at the equator) or
-compute the distance in PHP.
+Caveats:
+
+- **MariaDB**: `ST_Distance_Sphere` only accepts POINT geometries, so the
+  distance scopes work on point columns only there (polygon columns throw a
+  database error).
+- **PostGIS `geometry` columns**: `ST_Distance` returns SRS units (degrees for
+  4326) instead of meters. Use `geography` columns for meters.
 
 Unsupported drivers (e.g. SQLite) throw
 `Juanparati\LaraGeos\Exceptions\UnsupportedDriverException`.
