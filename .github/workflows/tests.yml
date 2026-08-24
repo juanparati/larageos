@@ -1,0 +1,81 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+        database:
+          - name: mysql
+            image: mysql:8.4
+            connection: mysql
+            port: 3306
+            options: >-
+              --health-cmd="mysqladmin ping -uroot -psecret"
+              --health-interval=10s
+              --health-timeout=5s
+              --health-retries=10
+          - name: mariadb
+            image: mariadb:11.4
+            connection: mariadb
+            port: 3306
+            options: >-
+              --health-cmd="healthcheck.sh --connect --innodb_initialized"
+              --health-interval=10s
+              --health-timeout=5s
+              --health-retries=10
+          - name: pgsql
+            image: postgis/postgis:16-3.4
+            connection: pgsql
+            port: 5432
+            options: >-
+              --health-cmd="pg_isready -U larageos -d larageos_test"
+              --health-interval=10s
+              --health-timeout=5s
+              --health-retries=10
+
+    name: PHP ${{ matrix.php }} - ${{ matrix.database.name }}
+
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        # Unknown keys are ignored by the other images.
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: larageos_test
+          MYSQL_USER: larageos
+          MYSQL_PASSWORD: secret
+          MARIADB_ROOT_PASSWORD: secret
+          POSTGRES_DB: larageos_test
+          POSTGRES_USER: larageos
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 3306:3306
+          - 5432:5432
+        options: ${{ matrix.database.options }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql, pdo_pgsql
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - run: vendor/bin/phpunit
+        env:
+          DB_CONNECTION: ${{ matrix.database.connection }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ matrix.database.port }}
+          DB_USERNAME: larageos
+          DB_PASSWORD: secret
+          DB_DATABASE: larageos_test
