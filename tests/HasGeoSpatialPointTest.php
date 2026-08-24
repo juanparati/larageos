@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Juanparati\LaraGeos\Tests\TestModels\Address;
 use Juanparati\LaraGeos\Types\Point;
 
-class HasSpatialPointTest extends TestCase
+class HasGeoSpatialPointTest extends TestCase
 {
     #[Test]
     public function it_generates_sql_query_for_selectDistanceTo_scope(): void

@@ -5,7 +5,7 @@ namespace Juanparati\LaraGeos\Tests;
 use PHPUnit\Framework\Attributes\Test;
 use Juanparati\LaraGeos\Tests\TestModels\Place;
 
-class HasSpatialPolygonTest extends TestCase
+class HasGeoSpatialPolygonTest extends TestCase
 {
     #[Test]
     public function it_generates_a_plain_select_for_polygon_models(): void

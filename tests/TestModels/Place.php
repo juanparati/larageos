@@ -6,7 +6,7 @@ namespace Juanparati\LaraGeos\Tests\TestModels;
 
 use Illuminate\Database\Eloquent\Model;
 use Juanparati\LaraGeos\Casts\RegionCast;
-use Juanparati\LaraGeos\Traits\HasSpatial;
+use Juanparati\LaraGeos\Traits\HasGeoSpatial;
 use Juanparati\LaraGeos\Types\Polygon;
 
 /**
@@ -16,7 +16,7 @@ use Juanparati\LaraGeos\Types\Polygon;
  */
 class Place extends Model
 {
-    use HasSpatial;
+    use HasGeoSpatial;
 
     protected $fillable = [
         'area',

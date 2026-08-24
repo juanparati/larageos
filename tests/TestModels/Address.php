@@ -7,7 +7,7 @@ namespace Juanparati\LaraGeos\Tests\TestModels;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Juanparati\LaraGeos\Casts\LocationCast;
-use Juanparati\LaraGeos\Traits\HasSpatial;
+use Juanparati\LaraGeos\Traits\HasGeoSpatial;
 use Juanparati\LaraGeos\Types\Point;
 
 /**
@@ -21,7 +21,7 @@ use Juanparati\LaraGeos\Types\Point;
  */
 class Address extends Model
 {
-    use HasSpatial;
+    use HasGeoSpatial;
 
     protected $fillable = [
         'location',

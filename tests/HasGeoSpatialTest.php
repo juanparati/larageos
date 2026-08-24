@@ -8,7 +8,7 @@ use Juanparati\LaraGeos\Tests\TestModels\Region;
 use Juanparati\LaraGeos\Types\Point;
 use Juanparati\LaraGeos\Types\Polygon;
 
-class HasSpatialTest extends TestCase
+class HasGeoSpatialTest extends TestCase
 {
     #[Test]
     public function it_returns_both_location_and_area_casted_attributes(): void

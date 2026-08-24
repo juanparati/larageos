@@ -66,11 +66,11 @@ Cast columns to rich `Point` / `Polygon` value objects:
 ```php
 use Juanparati\LaraGeos\Casts\LocationCast;
 use Juanparati\LaraGeos\Casts\RegionCast;
-use Juanparati\LaraGeos\Traits\HasSpatial;
+use Juanparati\LaraGeos\Traits\HasGeoSpatial;
 
 class Address extends Model
 {
-    use HasSpatial;
+    use HasGeoSpatial;  // Add HasGeoSpatial trait to the model
 
     protected $casts = [
         'location' => LocationCast::class,  // Point
@@ -129,7 +129,7 @@ Every ring needs at least 3 unique points and is closed automatically.
 
 ## Distance scopes
 
-Models using `HasSpatial` get three query scopes:
+Models using `HasGeoSpatial` get three query scopes:
 
 ```php
 $center = new Point(lat: 27.1234, lng: 39.1234);

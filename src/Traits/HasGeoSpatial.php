@@ -21,7 +21,7 @@ use Juanparati\LaraGeos\Types\Point;
  * - PostgreSQL/PostGIS: ST_Distance, meters on geography columns (ellipsoid);
  *   geometry columns return SRS units instead.
  */
-trait HasSpatial
+trait HasGeoSpatial
 {
     public function scopeSelectDistanceTo(Builder $query, string $column, Point $point): void
     {
