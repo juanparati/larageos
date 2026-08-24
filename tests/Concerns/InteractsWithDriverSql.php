@@ -92,7 +92,8 @@ trait InteractsWithDriverSql
         }
 
         if ($this->driver() === 'pgsql') {
-            return bin2hex("\x01" . pack('V', 0x20000003) . pack('V', $srid) . substr($body, 5));
+            // Replace the plain 4-byte type with the EWKB header (type | SRID flag, then SRID).
+            return bin2hex("\x01" . pack('V', 0x20000003) . pack('V', $srid) . substr($body, 4));
         }
 
         return pack('V', $srid) . "\x01" . $body;
