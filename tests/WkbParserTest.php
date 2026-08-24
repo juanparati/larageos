@@ -28,10 +28,12 @@ class WkbParserTest extends TestCase
     }
 
     #[Test]
-    public function it_parses_a_mysql_internal_point_with_axis_swap(): void
+    public function it_parses_a_mysql_internal_point_without_axis_swap(): void
     {
-        // MySQL 8 stores geographic SRSs latitude-first.
-        $binary = $this->internalGeometry(4326, pack('V', 1) . pack('e', 27.1234) . pack('e', 39.1234));
+        // MySQL 8 internal column storage is x = longitude first, like every
+        // other driver; its lat-first SRS axis order only applies to the WKT
+        // conversion functions (verified against MySQL 8.4 in CI).
+        $binary = $this->internalGeometry(4326, pack('V', 1) . pack('e', 39.1234) . pack('e', 27.1234));
 
         $point = WkbParser::parsePoint($binary, 'mysql');
 
@@ -99,10 +101,10 @@ class WkbParserTest extends TestCase
     }
 
     #[Test]
-    public function it_swaps_axes_for_mysql_polygon_ring_points(): void
+    public function it_parses_mysql_polygon_ring_points_without_axis_swap(): void
     {
-        // Ring stored latitude-first, as MySQL 8 does for SRID 4326.
-        $ring = $this->ring([[0.25, 0.5], [0.25, 1.5], [1.25, 1.5], [0.25, 0.5]]);
+        // Ring stored x = longitude first, as in the internal column format.
+        $ring = $this->ring([[0.5, 0.25], [1.5, 0.25], [1.5, 1.25], [0.5, 0.25]]);
         $binary = $this->internalGeometry(4326, pack('V', 3) . pack('V', 1) . $ring);
 
         $polygon = WkbParser::parsePolygon($binary, 'mysql');

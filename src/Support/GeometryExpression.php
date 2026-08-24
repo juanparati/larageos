@@ -15,8 +15,8 @@ use Juanparati\LaraGeos\Types\Polygon;
  * Generates driver-specific spatial SQL. This is the only place that maps
  * database drivers to their geometry function dialects:
  *
- * - mysql (8.0+): geographic SRSs are stored latitude-first, so WKT input and
- *   output must carry the 'axis-order=long-lat' option.
+ * - mysql (8.0+): WKT functions interpret geographic SRSs latitude-first by
+ *   default, so WKT input must carry the 'axis-order=long-lat' option.
  * - mariadb: plain OGC functions, no axis-order options, Cartesian semantics.
  * - pgsql (PostGIS): ST_MakePoint/ST_SetSRID; x is always longitude.
  */

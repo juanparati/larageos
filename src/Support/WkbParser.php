@@ -8,6 +8,15 @@ use InvalidArgumentException;
 use Juanparati\LaraGeos\Types\Point;
 use Juanparati\LaraGeos\Types\Polygon;
 
+/**
+ * Parses geometry column values: the MySQL/MariaDB internal format (4-byte SRID
+ * prefix + WKB), plain WKB, and PostGIS (E)WKB, including hex encoding.
+ *
+ * All of these store x = longitude first. MySQL's lat-first SRS axis order for
+ * geographic SRIDs applies only to its WKT/WKB conversion functions (hence the
+ * 'axis-order=long-lat' option on writes), not to the stored column bytes
+ * (verified against MySQL 8.4).
+ */
 final class WkbParser
 {
     private const TYPE_POINT = 1;
@@ -43,9 +52,7 @@ final class WkbParser
 
         self::assertFullyConsumed($binary, $offset);
 
-        [$lat, $lng] = self::toLatLng($x, $y, $srid, $driver);
-
-        return new Point(lat: $lat, lng: $lng, srid: $srid);
+        return new Point(lat: $y, lng: $x, srid: $srid);
     }
 
     public static function parsePolygon(mixed $value, string $driver): Polygon
@@ -72,9 +79,7 @@ final class WkbParser
             for ($i = 0; $i < $pointCount; $i++) {
                 [$x, $y, $offset] = self::readCoordinates($binary, $littleEndian, $offset);
 
-                [$lat, $lng] = self::toLatLng($x, $y, $srid, $driver);
-
-                $points[] = new Point(lat: $lat, lng: $lng, srid: null);
+                $points[] = new Point(lat: $y, lng: $x, srid: null);
             }
 
             $rings[] = $points;
@@ -206,18 +211,6 @@ final class WkbParser
         }
 
         return [$srid, $littleEndian, $type, $offset, $hasZM];
-    }
-
-    /**
-     * MySQL 8 stores geographic SRSs (e.g. 4326) in the SRS axis order, which is
-     * latitude-first. MariaDB and PostGIS always store x=lng first, as do
-     * Cartesian (SRID 0) values on any driver.
-     */
-    private static function toLatLng(float $x, float $y, int $srid, string $driver): array
-    {
-        $latitudeFirst = $driver === 'mysql' && $srid > 0;
-
-        return $latitudeFirst ? [$x, $y] : [$y, $x];
     }
 
     private static function readUint32(string $binary, bool $littleEndian, int $offset): int

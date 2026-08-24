@@ -67,17 +67,15 @@ trait InteractsWithDriverSql
     /**
      * A point in the driver's own column storage format (the bytes a raw
      * select would return): MySQL/MariaDB internal SRID-prefixed WKB, or
-     * PostGIS hex EWKB. MySQL stores geographic SRSs latitude-first.
+     * PostGIS hex EWKB. All drivers store x = longitude first.
      */
     protected function storedPointWkb(float $lat, float $lng, int $srid): string
     {
-        [$first, $second] = $this->driver() === 'mysql' && $srid > 0 ? [$lat, $lng] : [$lng, $lat];
-
         if ($this->driver() === 'pgsql') {
-            return bin2hex("\x01" . pack('V', 0x20000001) . pack('V', $srid) . pack('e', $first) . pack('e', $second));
+            return bin2hex("\x01" . pack('V', 0x20000001) . pack('V', $srid) . pack('e', $lng) . pack('e', $lat));
         }
 
-        return pack('V', $srid) . "\x01" . pack('V', 1) . pack('e', $first) . pack('e', $second);
+        return pack('V', $srid) . "\x01" . pack('V', 1) . pack('e', $lng) . pack('e', $lat);
     }
 
     /**
@@ -90,8 +88,7 @@ trait InteractsWithDriverSql
         $body = pack('V', 3) . pack('V', 1) . pack('V', count($ring));
 
         foreach ($ring as [$lat, $lng]) {
-            [$first, $second] = $this->driver() === 'mysql' && $srid > 0 ? [$lat, $lng] : [$lng, $lat];
-            $body .= pack('e', $first) . pack('e', $second);
+            $body .= pack('e', $lng) . pack('e', $lat);
         }
 
         if ($this->driver() === 'pgsql') {

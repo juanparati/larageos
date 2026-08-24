@@ -14,8 +14,8 @@ Based on [Laravel Spatial](https://github.com/tarfin-labs/laravel-spatial) by Ta
 - One of:
   - **MySQL 8.0+** (the library relies on the `axis-order` WKT option introduced in 8.0)
   - **MariaDB 10.6+** — you **must** use Laravel's `mariadb` driver, not `mysql`.
-    The axis order of stored coordinates is decided by the driver name, so a
-    MariaDB server behind a `mysql` connection will read/write swapped coordinates.
+    Writes on the `mysql` driver generate MySQL-specific SQL (the three-argument
+    `ST_GeomFromText` with `axis-order`) that MariaDB rejects.
   - **PostgreSQL with PostGIS**
 
 ## Installation
